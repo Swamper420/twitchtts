@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TwitchTTS - The Ultimate Multi-Voice TTS System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="logo-container">
+      <div class="logo-icon"><i class="fa-solid fa-waveform-lines"></i></div>
+      <div class="logo-text">
+        <span class="brand-name">Twitch<span class="highlight">TTS</span></span>
+        <span class="brand-tag">PRO MULTI-VOICE</span>
+      </div>
+    </div>
+    
+    <div class="header-status">
+      <div class="status-badge" id="wsStatus">
+        <span class="status-dot offline"></span>
+        <span class="status-label">Connecting...</span>
+      </div>
+      <div class="status-badge" id="channelStatus">
+        <i class="fa-brands fa-twitch"></i>
+        <span id="channelName">Offline</span>
+      </div>
+      <button class="icon-btn" id="openOverlayBtn" title="Open OBS Browser Overlay">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> OBS Widget
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+    <!-- Streamer Dashboard -->
+    <div id="dashboardView" class="view-panel active">
+      <div class="dashboard-grid">
+        
+        <!-- Left Panel: Multi-Voice Input & Quick Dispatch -->
+        <section class="card glass-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Multi-Voice Test Studio</h3>
+            <span class="badge">Live Preview</span>
+          </div>
+          <div class="card-body">
+            <p class="help-text">Use inline tags to switch voices mid-message: e.g. <code>[brian] Hello! [narrator] Welcome back!</code></p>
+            
+            <div class="input-group">
+              <label for="speakerUser">Username</label>
+              <input type="text" id="speakerUser" value="Streamer" placeholder="Twitch Username">
+            </div>
+
+            <div class="input-group">
+              <label for="multiVoiceInput">Message Text</label>
+              <textarea id="multiVoiceInput" rows="4" placeholder="Type message... Try [voice_name] inline tags!"></textarea>
+            </div>
+
+            <div class="voice-pills" id="quickVoicePills">
+              <!-- Voice quick pills populated dynamically -->
+            </div>
+
+            <div class="action-row">
+              <button class="btn btn-primary" id="sendTtsBtn">
+                <i class="fa-solid fa-paper-plane"></i> Send to Speech Queue
+              </button>
+              <button class="btn btn-secondary" id="directSynthesizeBtn">
+                <i class="fa-solid fa-play"></i> Direct API Test
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Center Panel: Active Queue & Real-time Visualizer -->
+        <section class="card glass-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-list-check"></i> Active Speech Queue</h3>
+            <div class="queue-actions">
+              <button class="btn btn-small btn-danger" id="clearQueueBtn"><i class="fa-solid fa-trash"></i> Clear</button>
+              <button class="btn btn-small btn-warning" id="skipQueueBtn"><i class="fa-solid fa-forward"></i> Skip</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Currently Playing Card -->
+            <div class="now-playing-panel" id="nowPlayingCard">
+              <div class="now-playing-header">
+                <span class="pulse-ring"></span>
+                <span class="now-playing-title">STANDBY</span>
+              </div>
+              <div class="now-playing-content" id="nowPlayingContent">
+                <p class="idle-msg">No active speech playing. Messages in Twitch chat will automatically read back here!</p>
+              </div>
+              <canvas id="visualizerCanvas" height="60"></canvas>
+            </div>
+
+            <!-- Queue List -->
+            <div class="queue-list" id="queueList">
+              <!-- Queue items rendered here -->
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Panel: Voice Explorer & Channel Settings -->
+        <section class="card glass-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-sliders"></i> Channel & Voices</h3>
+          </div>
+          <div class="card-body">
+            <div class="settings-form">
+              <div class="input-group">
+                <label for="twitchChannelInput">Twitch Channel</label>
+                <input type="text" id="twitchChannelInput" placeholder="e.g. streamer_channel">
+              </div>
+              <div class="input-group">
+                <label for="defaultVoiceSelect">Default Voice</label>
+                <select id="defaultVoiceSelect"></select>
+              </div>
+              <button class="btn btn-outline" id="saveSettingsBtn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Settings
+              </button>
+            </div>
+
+            <hr class="divider">
+
+            <div class="voices-list-container">
+              <h4>Available Reference Voices</h4>
+              <div class="voices-grid" id="voicesGrid">
+                <!-- Voices rendered dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- OBS Browser Overlay Widget View (Query ?overlay=true or /overlay) -->
+    <div id="overlayView" class="view-panel overlay-mode">
+      <div class="obs-widget-container">
+        <div class="speech-bubble" id="obsBubble">
+          <div class="bubble-header">
+            <span class="user-badge"><i class="fa-brands fa-twitch"></i> <span id="obsUser">Chatter</span></span>
+            <span class="voice-badge" id="obsVoice">DEFAULT</span>
+          </div>
+          <div class="bubble-text" id="obsText">
+            Listening for Twitch chat speech...
+          </div>
+          <canvas id="obsVisualizer" width="400" height="40"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

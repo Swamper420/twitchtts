@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  twitchtts:
+    build: .
+    container_name: twitchtts_core
+    ports:
+      - "8000:8000"
+    environment:
+      - CHATTERBOX_API_URL=http://host.docker.internal:8080/api/tts
+      - CHATTERBOX_API_MODEL=default
+      - CHATTERBOX_DEFAULT_VOICE=default
+      - TWITCH_CHANNEL=your_channel_name
+    volumes:
+      - ./data/voices:/app/data/voices
+      - ./data/cache:/app/data/cache
+    restart: unless-stopped
