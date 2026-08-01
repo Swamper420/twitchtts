@@ -67,12 +67,26 @@ async def websocket_endpoint(websocket: WebSocket):
         ws_manager.disconnect(websocket)
 
 
-# Mount static frontend directory if built
-static_path = Path(__file__).parent.parent / "static"
+# Mount static frontend directory (checks app/static first, then frontend/)
+static_path = Path(__file__).parent / "static"
+if not static_path.exists():
+    static_path = Path(__file__).parent.parent / "frontend"
+if not static_path.exists():
+    static_path = settings.BASE_DIR / "frontend"
+
 if static_path.exists():
-    app.mount("/", StaticFiles(directory=static_path, html=True), name="static")
+    logger.info(f"Mounting static frontend from: {static_path}")
+    app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
+else:
+    logger.warning("No static frontend directory found!")
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Favicon fallback endpoint."""
+    favicon_file = static_path / "favicon.ico"
+    if favicon_file.exists():
+        from fastapi.responses import FileResponse
+        return FileResponse(favicon_file)
+    return Response(status_code=204)
+
