@@ -4,7 +4,9 @@ class TwitchTTSApp {
   constructor() {
     this.ws = null;
     this.audioCtx = null;
-    this.isOverlay = window.location.search.includes('overlay=true') || window.location.hash === '#overlay';
+    this.isOverlay = window.location.search.includes('overlay=true') || 
+                     window.location.hash === '#overlay' || 
+                     window.location.pathname.includes('/overlay');
     this.voices = [];
     this.queueState = { current: null, queue: [], history: [], count: 0 };
     this.isPlayingAudio = false;

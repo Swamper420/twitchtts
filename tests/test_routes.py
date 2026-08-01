@@ -55,3 +55,13 @@ def test_tts_post_json_spec(mock_synth):
     json_data = response.json()
     assert json_data["text"] == "Hello"
     assert "audio" in json_data
+
+
+def test_spa_routes():
+    for route in ["/", "/overlay", "/dashboard", "/widget", "/style.css", "/app.js"]:
+        resp = client.get(route)
+        assert resp.status_code == 200, f"Route {route} returned {resp.status_code}"
+    
+    favicon_resp = client.get("/favicon.ico")
+    assert favicon_resp.status_code in (200, 204)
+

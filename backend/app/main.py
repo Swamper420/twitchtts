@@ -1,7 +1,8 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -67,18 +68,26 @@ async def websocket_endpoint(websocket: WebSocket):
         ws_manager.disconnect(websocket)
 
 
-# Mount static frontend directory (checks app/static first, then frontend/)
-static_path = Path(__file__).parent / "static"
+# Locate static frontend directory (checks root frontend/ first, then app/static)
+static_path = settings.BASE_DIR / "frontend"
+if not static_path.exists():
+    static_path = Path(__file__).parent / "static"
 if not static_path.exists():
     static_path = Path(__file__).parent.parent / "frontend"
-if not static_path.exists():
-    static_path = settings.BASE_DIR / "frontend"
 
-if static_path.exists():
-    logger.info(f"Mounting static frontend from: {static_path}")
-    app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
-else:
-    logger.warning("No static frontend directory found!")
+
+# Explicit frontend HTML routes for direct URL navigation & OBS browser source overlays
+@app.get("/overlay", include_in_schema=False)
+@app.get("/overlay/", include_in_schema=False)
+@app.get("/dashboard", include_in_schema=False)
+@app.get("/dashboard/", include_in_schema=False)
+@app.get("/widget", include_in_schema=False)
+@app.get("/widget/", include_in_schema=False)
+async def serve_spa_route():
+    index_file = static_path / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    raise HTTPException(status_code=404, detail="Index HTML file not found")
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -86,7 +95,15 @@ async def favicon():
     """Favicon fallback endpoint."""
     favicon_file = static_path / "favicon.ico"
     if favicon_file.exists():
-        from fastapi.responses import FileResponse
         return FileResponse(favicon_file)
     return Response(status_code=204)
+
+
+# Mount static frontend directory at root (MUST be placed after explicit API/HTML routes)
+if static_path.exists():
+    logger.info(f"Mounting static frontend from: {static_path}")
+    app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
+else:
+    logger.warning("No static frontend directory found!")
+
 
